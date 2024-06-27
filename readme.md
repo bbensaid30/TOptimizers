@@ -14,7 +14,7 @@ I implement new optimizers in Tensorflow and test them on some real datasets wit
 * metrics_perso: define personal metrics to evaluate a model
 * model: define the neural networks
 * perso: implement some Armijo optimizers (LC:LCEGD1 and LCD:LCEGD2 in the original article). 
-The hyperparameters rho and eps_egd could be ignored (it was just an uunsuccessful test).
+The hyperparameters rho and eps_egd could be ignored (it was just an unsuccessful test).
 * prepared_eqn: data preparation for a physical problem about state equations (no matter)
 * read: read data files in csv format
 * tirages: run sequentially or in parallel trainings with different initializations
