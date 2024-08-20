@@ -8,10 +8,14 @@ import tensorflow as tf
 
 from init import init
 
+def build_ex1_5(loss,name_init,params_init, seed):
+    model = models.Sequential()
+    model.add(layers.Dense(1, activation='linear', input_shape=(1,), use_bias=False, kernel_initializer=init(name_init,1,1,seed,params_init)))
+    
+    model.compile(loss=loss)
+    return model
+
 def build_poly(activation, loss,name_init,params_init, seed):
-    # Because we will need to instantiate
-    # the same model multiple times,
-    # we use a function to construct it.
     model = models.Sequential()
     model.add(layers.Dense(1, activation=activation, input_shape=(1,), kernel_initializer=init(name_init,1,1,seed,params_init[0:2]),
     bias_initializer=init(name_init,1,1,seed,params_init[2:4])))
@@ -25,6 +29,7 @@ def build_FC(nbNeurons, activations, loss, name_init, params, seed, metrics):
     # we use a function to construct it.
     L=len(nbNeurons)-1
     model = models.Sequential()
+    #model.add(Input(shape=(nbNeurons[0],)))
     model.add(layers.Dense(nbNeurons[1], activation=activations[0], input_dim=nbNeurons[0], kernel_initializer=init(name_init,nbNeurons[1],nbNeurons[0],seed,params),
     bias_initializer=initializers.Zeros()))
     if(L>1):
@@ -134,6 +139,8 @@ def build_cnn_embedding(loss,name_init,params,seed,metrics):
     model.compile(loss=loss,metrics=metrics)
     return model
 
+
+# nbNeurons and activations have sense for fully connected networks
 def build_model(name_model, nbNeurons, activations, loss, name_init, params, seed, metrics):
     if(name_model=="poly"):
         return build_poly(activations[0],loss,name_init,params,seed)
