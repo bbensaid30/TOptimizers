@@ -30,3 +30,27 @@ def vectorize_sequences(sequences, dimension=10000):
     for i, sequence in enumerate(sequences):
         results[i, sequence] = 1  # set specific indices of results[i] to 1s
     return results.astype('uint8')
+
+def gradTotInit(grad):
+    gradTot=[]
+    for i in range(len(grad)):
+        gradTot.append(tf.zeros_like(grad[i]))
+    return gradTot
+
+def gradSum(gradTot, grad):
+    for i in range(len(grad)):
+        gradTot[i]+=grad[i]
+
+def gradDiff(gradTot, grad):
+    for i in range(len(grad)):
+        gradTot[i]-=grad[i]
+
+def gradDiv(gradTot, P):
+    for i in range(len(gradTot)):
+        gradTot[i]=gradTot[i]/P
+
+def gradDot(grad1, grad2):
+    result=0
+    for i in range(len(grad1)):
+        result+=tf.tensordot(grad1[i],grad2[i],axes=0)
+    return result
