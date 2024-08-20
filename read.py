@@ -12,6 +12,16 @@ def read_data(x_train_file, y_train_file, x_test_file, y_test_file):
     return x_train,y_train,x_test,y_test
 
 def poly_data():
-    x = np.array([[0],[1]])
-    y = np.array([[0],[0]])
+    x = np.array([[0.0],[1.0]])
+    y = np.array([[0.0],[0.0]])
+    return x,y
+
+def ex1():
+    x = np.array([[1.0],[2.0]])
+    y = np.array([[0.0],[1.0]])
+    return x,y
+
+def ex5():
+    x = np.array([[1.0],[2.0],[2.0]])
+    y = np.array([[0.0],[1.0],[-3.0]])
     return x,y
