@@ -22,11 +22,10 @@ def RAG(model, loss_fn, train_dataset, PTrain, eps, max_epochs, lr=0.1, f1=30, f
     coeff=coeff_max
 
     epoch=0
-    eta=lr; eta0=lr; eta1=lr; eta_start=lr; cost=0
-    LMax=0; LSum=0; dist=0; grad_square=0; gNorm=1000; prod=0
-    R=0; R_epoch=0; iterLoop=0; total_iterLoop=0
-    imax=0
-    gauche=0; droite=0; milieu=0; m_best=0
+    eta=lr; eta0=lr; eta1=lr; eta_start=lr
+    dist=0
+    R=0; 
+    iterLoop=0; total_iterLoop=0
     nLoops=2; last_pass=False
     LTab = np.zeros(m); diffs=np.zeros(m); R_tab=np.zeros(m)
     grads=[]
@@ -201,7 +200,7 @@ def RAG(model, loss_fn, train_dataset, PTrain, eps, max_epochs, lr=0.1, f1=30, f
     
         epoch+=1
 
-        if(epoch%5==0):
+        if(epoch%2==0):
             print("epoch:", epoch)
             print("gradNorm: ", gNorm/PTrain)
             print("R: ", R/PTrain)
@@ -232,15 +231,13 @@ def RAGL(model, loss_fn, train_dataset, PTrain, eps, max_epochs, lr=0.1, f1=30, 
     coeff=coeff_max
 
     epoch=0
-    eta=lr; eta0=lr; eta1=lr; eta_start=lr; cost=0
-    LMax=0; LSum=0; dist=0; grad_square=0; gNorm=1000; prod=0
-    R=0; R_epoch=0; iterLoop=0; total_iterLoop=0
-    imax=0
-    gauche=0; droite=0; milieu=0; m_best=0
+    eta=lr; eta0=lr; eta1=lr; eta_start=lr
+    dist=0
+    R=0
+    iterLoop=0; total_iterLoop=0
     nLoops=2; last_pass=False
     LTab = np.zeros(m); R_tab=np.zeros(m)
     
-
     start_time = time.time()
 
     weight_prec = model.get_weights()
@@ -433,11 +430,10 @@ def RAGL(model, loss_fn, train_dataset, PTrain, eps, max_epochs, lr=0.1, f1=30, 
     
         epoch+=1
 
-        if(epoch%5==0):
+        if(epoch%2==0):
             print("epoch:", epoch)
             print("gradNorm: ", gNorm/PTrain)
             print("R: ", R/PTrain)
-            print("d: ", dist/PTrain)
 
     end_time=time.time()
 
