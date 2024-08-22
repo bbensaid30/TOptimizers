@@ -37,6 +37,10 @@ def gradTotInit(grad):
         gradTot.append(tf.zeros_like(grad[i]))
     return gradTot
 
+def gradTotZero(gradTot):
+    for i in range(len(gradTot)):
+        gradTot[i]=tf.zeros_like(gradTot[i])
+
 def gradSum(gradTot, grad):
     for i in range(len(grad)):
         gradTot[i]+=grad[i]
