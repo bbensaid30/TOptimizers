@@ -13,20 +13,20 @@ from eval import eval_global
 num_cpus = 8; num_gpus=0
 n_jobs=-1
 
-#@ray.remote
 def single_sample(name_model, nbNeurons, activations, loss, name_init, params_init, seed, metrics, x_train, y_train,
-algo, eps, max_epochs, lr, seuil, f1, f2, rho, eps_egd, lambd, beta_1, beta_2, epsilon, amsgrad, sample_weight,
+algo, eps, max_epochs, lr, seuil, f1, f2, rho, eps_egd, lambd, beta_1, beta_2, epsilon, amsgrad, type, sample_weight,
 name_eval,x_test,y_test,transformerY=None,sample_weight_eval=None):
 
     dico = {}
 
     #build the model
     model = build_model(name_model,nbNeurons,activations,loss,name_init,params_init,seed,metrics)
-    #model.summary()
+    model.summary()
+    print(model.get_weights()[0].dtype)
 
     #train the model
     model, epochs, norme_grad, cost_final, temps = train(algo,model, loss,x_train,y_train,eps,max_epochs,
-    lr,seuil,f1,f2,rho,eps_egd,lambd,beta_1,beta_2,epsilon,amsgrad,sample_weight)
+    lr,seuil,f1,f2,rho,eps_egd,lambd,beta_1,beta_2,epsilon,amsgrad,type,sample_weight)
     dico['num_tirage'] = seed
     dico['epochs'] = epochs
     dico['time_train'] = temps
@@ -56,26 +56,17 @@ name_eval,x_test,y_test,transformerY=None,sample_weight_eval=None):
 
 def tirages(tirageMin, nbTirages,
     name_model, nbNeurons, activations, loss, name_init, params, metrics, x_train, y_train,
-    algo, eps, max_epochs, lr, seuil, f1, f2, rho, eps_egd, lambd, beta_1, beta_2, epsilon, amsgrad, sample_weight,
+    algo, eps, max_epochs, lr, seuil, f1, f2, rho, eps_egd, lambd, beta_1, beta_2, epsilon, amsgrad, type, sample_weight,
     name_eval,x_test,y_test,transformerY=None,sample_weight_eval=None):
 
-    
     with parallel_backend('loky', n_jobs=n_jobs):
         res = Parallel()(delayed(single_sample)(name_model, nbNeurons, activations, loss, name_init, params, i, metrics, x_train, y_train,
-        algo, eps, max_epochs, lr, seuil, f1, f2, rho, eps_egd, lambd, beta_1, beta_2, epsilon, amsgrad, sample_weight,
+        algo, eps, max_epochs, lr, seuil, f1, f2, rho, eps_egd, lambd, beta_1, beta_2, epsilon, amsgrad, type, sample_weight,
         name_eval,x_test,y_test,transformerY,sample_weight_eval) for i in range(tirageMin, tirageMin+nbTirages))
-    
-    """ ray.init(num_cpus=num_cpus, num_gpus=num_gpus)
-    x_train = ray.put(x_train); y_train = ray.put(y_train); x_test = ray.put(x_test); y_test = ray.put(y_test)
-    res = [single_sample.remote(name_model, nbNeurons, activations, loss, name_init, params, i, metrics, x_train, y_train,
-        algo, eps, max_epochs, lr, seuil, f1, f2, rho, eps_egd, lambd, beta_1, beta_2, epsilon, amsgrad, sample_weight,
-        name_eval,x_test,y_test,transformerY,sample_weight_eval) for i in range(tirageMin, tirageMin+nbTirages)] """
     
     """res = [single_sample(name_model, nbNeurons, activations, loss, name_init, params, i, metrics, x_train, y_train,
         algo, eps, max_epochs, lr, seuil, f1, f2, rho, eps_egd, lambd, beta_1, beta_2, epsilon, amsgrad, sample_weight,
         name_eval,x_test,y_test,transformerY,sample_weight_eval) for i in range(tirageMin, tirageMin+nbTirages)]"""
-
-    #return ray.get(res)
     return res
 
 
