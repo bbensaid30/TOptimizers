@@ -1,22 +1,11 @@
-import numpy as np
-import tensorflow as tf
-
 from keras import losses, metrics
 
 from data import IMDB_onehot, IMDB_embedding
 import tirages
 
-type='float32'
-tf.keras.backend.set_floatx(type)
-
 sample_weight=1
 
-# Prepare the training dataset.
 x_train, y_train, x_test, y_test = IMDB_onehot()
-
-# Prepare the training dataset.
-#train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
-#train_dataset = train_dataset.shuffle(buffer_size=batch_size).batch(batch_size)
 
 # architecture.
 name_model="FC"
@@ -40,7 +29,7 @@ amsgrad=False
 tirageMin=0; nbTirages=1
 algo = "LC_EGD2"
 studies = tirages.tirages(tirageMin,nbTirages,name_model,nbNeurons,activations,loss,name_init,params_init,metrics,
-x_train,y_train,algo,eps,max_epochs,lr,seuil,f1,f2,rho,eps_egd,lambd,beta_1,beta_2,epsilon,amsgrad,sample_weight,
+x_train,y_train,algo,eps,max_epochs,lr,seuil,f1,f2,rho,eps_egd,lambd,beta_1,beta_2,epsilon,amsgrad,"float32",sample_weight,
 "simple",x_test,y_test)
 print(studies)
 

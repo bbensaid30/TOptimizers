@@ -1,35 +1,25 @@
-import numpy as np
-import tensorflow as tf
-
 from keras import losses, metrics
 
-from data import FASHION_MNIST_flatten
+from data import FASHION_MNIST
 import tirages
-
-type='float32'
-tf.keras.backend.set_floatx(type)
 
 sample_weight=1
 
 # Prepare the training dataset.
-x_train, y_train, x_test, y_test = FASHION_MNIST_flatten(type)
-
-# Prepare the training dataset.
-#train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
-#train_dataset = train_dataset.shuffle(buffer_size=batch_size).batch(batch_size)
+x_train, y_train, x_test, y_test = FASHION_MNIST()
 
 # architecture.
-name_model="FC"
-nbNeurons=[784,400,10]
-activations=['tanh','softmax']
+name_model="lenet1_mnist"
+nbNeurons=[]
+activations=[]
 loss = losses.MeanSquaredError()
 #loss = losses.CategoricalCrossentropy()
 metrics = ["categorical_accuracy"]
-name_init="Xavier"
+name_init="Bengio"
 params_init=[-1,1]
 
 #paramètres d'arrêt
-eps=10**(-4); max_epochs=10
+eps=10**(-4); max_epochs=200
 #paramètres d'entrainement 
 lr=0.1
 seuil=0.01
@@ -40,7 +30,7 @@ amsgrad=False
 tirageMin=0; nbTirages=1
 algo="LC_EGD2"
 studies = tirages.tirages(tirageMin,nbTirages,name_model,nbNeurons,activations,loss,name_init,params_init,metrics,
-x_train,y_train,algo,eps,max_epochs,lr,seuil,f1,f2,rho,eps_egd,lambd,beta_1,beta_2,epsilon,amsgrad,sample_weight,
+x_train,y_train,algo,eps,max_epochs,lr,seuil,f1,f2,rho,eps_egd,lambd,beta_1,beta_2,epsilon,amsgrad,"float32",sample_weight,
 "simple",x_test,y_test)
 print(studies)
 
