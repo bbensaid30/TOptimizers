@@ -10,10 +10,6 @@ sample_weight=1
 # Prepare the training dataset.
 x_train, y_train, x_test, y_test = MNIST_flatten()
 
-# Prepare the training dataset.
-train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
-test_dataset = tf.data.Dataset.from_tensor_slices((x_test, y_test))
-
 #batch
 PTrain=60000; PTest=10000
 buffer_size=60000
@@ -41,9 +37,9 @@ amsgrad=False
 tirageMin=0; nbTirages=1; nbSeeds=1
 
 studies = tirages_sto.tirages_sto(tirageMin, nbTirages, nbSeeds, 
-    name_model, nbNeurons, activations, loss, name_init, params_init, metrics, train_dataset, PTrain, 
+    name_model, nbNeurons, activations, loss, name_init, params_init, metrics, x_train, y_train, PTrain, 
     algo, batch_size, buffer_size, eps, max_epochs, lr, f1, f2, lambd, beta_1, beta_2, epsilon_a, amsgrad, "float32",
-    "simple",test_dataset, PTest)
+    "simple", x_test, y_test, PTest)
 print(studies)
 
 """ fileEnd = tirages_sto.informationFileSto(tirageMin,nbTirages,nbSeeds, name_model, nbNeurons, activations, name_init, params_init,
