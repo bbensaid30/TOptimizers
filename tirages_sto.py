@@ -1,6 +1,7 @@
 import os
 os.chdir("/home/bbensaid/Documents/Anabase/NN")
 
+import tensorflow as tf
 from joblib import Parallel, delayed, parallel_backend
 from math import isnan, isinf
 from numpy import format_float_scientific as ffs
@@ -12,18 +13,23 @@ from eval_sto import eval_sto_global
 num_cpus = 8; num_gpus=0
 n_jobs=-1
 
-def single_sto_sample(name_model, nbNeurons, activations, loss, name_init, params_init, seed, metrics, train_dataset, PTrain,
+def single_sto_sample(name_model, nbNeurons, activations, loss, name_init, params_init, seed, metrics, x_train, y_train, PTrain,
 algo, batch_size, buffer_size, seed_permut, eps, max_epochs, lr, f1, f2, lambd, beta_1, beta_2, epsilon_a, amsgrad, type,
-name_eval,test_dataset, PTest, transformerY=None):
+name_eval, x_test, y_test, PTest, transformerY=None):
 
     dico = {}
+    train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
+    test_dataset = tf.data.Dataset.from_tensor_slices((x_test, y_test))
 
     if(algo=="RRAdam" or algo=="RRGD"):
         train_dataset = train_dataset.shuffle(buffer_size=buffer_size, seed=seed_permut, reshuffle_each_iteration=True).batch(batch_size)
+    elif(algo=="RAG" or algo=="RAGL" or algo=="GD_batch" or algo=="IAG" or algo=="Streaming_SVRG"):
+        train_dataset = train_dataset.batch(batch_size)
+    test_dataset = test_dataset.batch(batch_size)
 
     #build the model
     model = build_model(name_model,nbNeurons,activations,loss,name_init,params_init,seed,metrics)
-    model.summary()
+    #model.summary()
 
     #train the model
     model, epochs, norme_grad, cost_final, temps = train_sto(algo, model,loss,
@@ -62,23 +68,18 @@ name_eval,test_dataset, PTest, transformerY=None):
     return dico
 
 def tirages_sto(tirageMin, nbTirages, nbSeeds, 
-    name_model, nbNeurons, activations, loss, name_init, params_init, metrics, train_dataset, PTrain, 
+    name_model, nbNeurons, activations, loss, name_init, params_init, metrics, x_train, y_train, PTrain, 
     algo, batch_size, buffer_size, eps, max_epochs, lr, f1, f2, lambd, beta_1, beta_2, epsilon_a, amsgrad, type,
-    name_eval,test_dataset, PTest, transformerY=None):
+    name_eval, x_test, y_test, PTest, transformerY=None):
 
-    if(algo=="RAG" or algo=="RAGL" or algo=="GD_batch" or algo=="IAG" or algo=="Streaming_SVRG"):
-        train_dataset = train_dataset.batch(batch_size)
-
-    test_dataset = test_dataset.batch(batch_size)
-
-    """ with parallel_backend('threading', n_jobs=n_jobs):
-        res = Parallel()(delayed(single_sto_sample)(name_model, nbNeurons, activations, loss, name_init, params_init, i, metrics, train_dataset, PTrain,
+    with parallel_backend('loky', n_jobs=n_jobs):
+        res = Parallel()(delayed(single_sto_sample)(name_model, nbNeurons, activations, loss, name_init, params_init, i, metrics, x_train, y_train, PTrain,
     algo, batch_size, buffer_size, j, eps, max_epochs, lr, f1, f2, lambd, beta_1, beta_2, epsilon_a, amsgrad, type,
-    name_eval,test_dataset, PTest, transformerY) for i in range(tirageMin, tirageMin+nbTirages) for j in range(nbSeeds)) """
+    name_eval,x_test, y_test, PTest, transformerY) for i in range(tirageMin, tirageMin+nbTirages) for j in range(nbSeeds))
     
-    res = [single_sto_sample(name_model, nbNeurons, activations, loss, name_init, params_init, i, metrics, train_dataset, PTrain,
+    """ res = [single_sto_sample(name_model, nbNeurons, activations, loss, name_init, params_init, i, metrics, x_train, y_train, PTrain,
     algo, batch_size, buffer_size, j, eps, max_epochs, lr, f1, f2, lambd, beta_1, beta_2, epsilon_a, amsgrad, type,
-    name_eval,test_dataset, PTest, transformerY) for i in range(tirageMin, tirageMin+nbTirages) for j in range(nbSeeds)]
+    name_eval,x_test, y_test, PTest, transformerY) for i in range(tirageMin, tirageMin+nbTirages) for j in range(nbSeeds)] """
 
     return res
 
