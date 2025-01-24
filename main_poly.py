@@ -1,8 +1,8 @@
 from keras import losses, backend
 from loss_perso import squared_error
 
-type="float64"
-backend.set_floatx(type)
+typef="float64"
+backend.set_floatx(typef)
 
 import os
 os.chdir("/home/bbensaid/Documents/Anabase/NN") 
@@ -13,13 +13,13 @@ from training import train
 import read
 
 batch_size=2
-x_train,y_train = read.poly_data(type)
+x_train,y_train = read.poly_data(typef)
 
 activation=activations_perso.polyTwo
 loss = losses.MeanSquaredError()
 #loss=squared_error
 name_init="Uniform"
-w=0; b=4
+w=-2; b=4
 params_init=[w,w,b,b]
 seed=0
 
@@ -35,7 +35,7 @@ amsgrad=False
 
 algo="LC_EGD"
 model = build_poly(activation,loss,name_init,params_init,seed)
-model, epoch, norme_grad, cost, temps = train(algo,model,loss,x_train,y_train,eps,max_epochs,lr,seuil,f1,f2,rho,eps_egd,lambd,beta_1,beta_2,epsilon_a,amsgrad,type)
+model, epoch, norme_grad, cost, temps = train(algo,model,loss,x_train,y_train,eps,max_epochs,lr,seuil,f1,f2,rho,eps_egd,lambd,beta_1,beta_2,epsilon_a,amsgrad,typef)
 
 #print(model.get_weights())
 print("temps: ", temps)

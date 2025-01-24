@@ -3,19 +3,21 @@ from keras import optimizers
 import tensorflow as tf
 import time
 import numpy as np
+import copy
 
 from linesearch import search_full, search_dichotomy_full
+from linesearch import search_normalized_full, search_normalized_dichotomy_full
 from classic import Adam
 
 
 def LC_EGD(model, loss_fn,
-x,y, eps, max_epochs, lr=0.1, f1=2, f2=10000, lambd=0.5, type="float32", sample_weight=None):
+x,y, eps, max_epochs, lr=0.1, f1=2, f2=10000, lambd=0.5, typef="float32", sample_weight=None):
 
     optimizer = optimizers.SGD(lr)
     norme_grad=1000; epoch=0; active_Adam=False; epoch_Adam=0
-    if(type=="float32"):
+    if(typef=="float32"):
         epsilon_machine = np.finfo(np.float32).eps
-    elif(type=="float64"):
+    elif(typef=="float64"):
         epsilon_machine = np.finfo(np.float64).eps
     start_time = time.time()
     while(norme_grad>eps and epoch<max_epochs):
@@ -92,7 +94,6 @@ x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, type="float32", sample
         weight_n = model.get_weights()
         
         lr, cost, grads, iterLoop = search_dichotomy_full(model, x, y, optimizer, loss_fn, sample_weight, grads, weight_n, cost_prec, lambd, V_dot, f1, lr, nbLoops)
-
         if(lr*norme_grad<epsilon_machine):
             active_Adam=True; break
 
@@ -100,6 +101,61 @@ x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, type="float32", sample
         lr*=f2
 
         norme_grad= tf.linalg.global_norm(grads); V_dot=norme_grad**2
+
+        epoch+=1    
+
+        if epoch % 1 == 0:
+            print("\Epoch %d" % (epoch,))
+            print("Loss: ", cost)
+            print("grad: ", norme_grad)
+        
+    if(active_Adam):
+        print("Adam débute")
+        model,epoch_Adam, norme_grad,cost,time_Adam= Adam(model,loss_fn,x,y,eps,max_epochs,0.001,0.9,0.999,10**(-7),False,sample_weight)
+
+    end_time = time.time()
+
+    return model, epoch+epoch_Adam, norme_grad, cost, end_time-start_time
+
+
+def LC_NGD(model, loss_fn,
+x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, typef="float32", sample_weight=None):
+
+    optimizer = optimizers.SGD(lr)
+    if(typef=="float32"):
+        epsilon_machine = np.finfo(np.float32).eps
+    elif(typef=="float64"):
+        epsilon_machine = np.finfo(np.float64).eps
+    norme_grad=1000; epoch=0; active_Adam=False; epoch_Adam=0
+    nbLoops=3
+    start_time = time.time()
+    while(norme_grad>eps and epoch<max_epochs):
+
+        if(epoch==0):
+            with tf.GradientTape() as tape:
+                prediction = model(x, training=True)
+
+                cost = loss_fn(y, prediction,sample_weight=sample_weight)
+                print("cost_init: ", cost)
+
+            grads = tape.gradient(cost, model.trainable_weights)
+            norme_grad = tf.linalg.global_norm(grads)
+            if(norme_grad<eps):
+                break
+            print("grad_init: ", norme_grad)
+
+        cost_prec = cost
+        weight_n = copy.deepcopy(model.get_weights())
+        
+        lr, cost, grads, iterLoop = search_normalized_dichotomy_full(model, x, y, optimizer, loss_fn, sample_weight, grads, weight_n, cost_prec, lambd, norme_grad, f1, lr, nbLoops)
+
+        if(lr*norme_grad<epsilon_machine):
+            active_Adam=False; break
+
+        print("lr: ", lr)
+        lr*=f2
+
+        norme_grad= tf.linalg.global_norm(grads)
 
         epoch+=1    
 

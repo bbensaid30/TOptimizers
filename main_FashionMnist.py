@@ -19,9 +19,9 @@ name_init="Bengio"
 params_init=[-1,1]
 
 #paramètres d'arrêt
-eps=10**(-4); max_epochs=200
+eps=10**(-4); max_epochs=3000
 #paramètres d'entrainement 
-lr=0.1
+lr=0.001
 seuil=0.01
 f1=30; f2=10000; lambd=0.5; rho=0.9; eps_egd=0.01
 beta_1=0.9; beta_2=0.999; epsilon=1e-07

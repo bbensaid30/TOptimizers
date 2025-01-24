@@ -53,8 +53,26 @@ def gradDiv(gradTot, P):
     for i in range(len(gradTot)):
         gradTot[i]=gradTot[i]/P
 
-def gradDot(grad1, grad2):
-    result=0
+def gradMul(gradTot, P):
+    for i in range(len(gradTot)):
+        gradTot[i]=gradTot[i]*P
+
+def var_compute(grad,g,m,typef):
+    if(typef=="float32"):
+        result=tf.constant(0.0, dtype=tf.float32)
+        m_cast=tf.cast(m,dtype=tf.float32)
+    elif(typef=="float64"):
+        result=tf.constant(0.0, dtype=tf.float64)
+        m_cast=tf.cast(m,dtype=tf.float64)
+    for i in range(len(grad)):
+        result+=tf.linalg.norm(grad[i]-g[i]/m_cast)**2
+    return result
+
+def gradDot(grad1, grad2, typef="float32"):
+    if(typef=="float32"):
+        result=tf.constant(0.0, dtype=tf.float32)
+    elif(typef=="float64"):
+        result=tf.constant(0.0, dtype=tf.float64)
     for i in range(len(grad1)):
-        result+=tf.tensordot(grad1[i],grad2[i],axes=0)
+        result+=tf.tensordot(tf.reshape(grad1[i],[-1]),tf.reshape(grad2[i],[-1]),axes=1)
     return result

@@ -14,16 +14,16 @@ num_cpus = 8; num_gpus=0
 n_jobs=-1
 
 def single_sto_sample(name_model, nbNeurons, activations, loss, name_init, params_init, seed, metrics, x_train, y_train, PTrain,
-algo, batch_size, buffer_size, seed_permut, eps, max_epochs, lr, f1, f2, lambd, beta_1, beta_2, epsilon_a, amsgrad, type,
+algo, batch_size, buffer_size, seed_permut, eps, max_epochs, lr, f1, f2, lambd, beta_1, beta_2, epsilon_a, amsgrad, typef,
 name_eval, x_test, y_test, PTest, transformerY=None):
 
     dico = {}
     train_dataset = tf.data.Dataset.from_tensor_slices((x_train, y_train))
     test_dataset = tf.data.Dataset.from_tensor_slices((x_test, y_test))
 
-    if(algo=="RRAdam" or algo=="RRGD"):
+    if(algo=="RRAdam" or algo=="RRGD" or algo=="RR_rms"):
         train_dataset = train_dataset.shuffle(buffer_size=buffer_size, seed=seed_permut, reshuffle_each_iteration=True).batch(batch_size)
-    elif(algo=="RAG" or algo=="RAGL" or algo=="GD_batch" or algo=="IAG" or algo=="Streaming_SVRG"):
+    elif(algo=="RAG" or algo=="RAGL" or algo=="GD_estim" or algo=="GD_batch" or algo=="IAG" or algo=="Streaming_SVRG"):
         train_dataset = train_dataset.batch(batch_size)
     test_dataset = test_dataset.batch(batch_size)
 
@@ -34,7 +34,7 @@ name_eval, x_test, y_test, PTest, transformerY=None):
     #train the model
     model, epochs, norme_grad, cost_final, temps = train_sto(algo, model,loss,
     train_dataset, PTrain, eps, max_epochs, lr, f1, f2, lambd, 
-    beta_1, beta_2, epsilon_a, amsgrad, type)
+    beta_1, beta_2, epsilon_a, amsgrad, typef)
     dico['num_tirage'] = seed
     dico['num_permut'] = seed_permut
     dico['epochs'] = epochs
@@ -69,17 +69,17 @@ name_eval, x_test, y_test, PTest, transformerY=None):
 
 def tirages_sto(tirageMin, nbTirages, nbSeeds, 
     name_model, nbNeurons, activations, loss, name_init, params_init, metrics, x_train, y_train, PTrain, 
-    algo, batch_size, buffer_size, eps, max_epochs, lr, f1, f2, lambd, beta_1, beta_2, epsilon_a, amsgrad, type,
+    algo, batch_size, buffer_size, eps, max_epochs, lr, f1, f2, lambd, beta_1, beta_2, epsilon_a, amsgrad, typef,
     name_eval, x_test, y_test, PTest, transformerY=None):
 
-    with parallel_backend('loky', n_jobs=n_jobs):
+    """ with parallel_backend('loky', n_jobs=n_jobs):
         res = Parallel()(delayed(single_sto_sample)(name_model, nbNeurons, activations, loss, name_init, params_init, i, metrics, x_train, y_train, PTrain,
-    algo, batch_size, buffer_size, j, eps, max_epochs, lr, f1, f2, lambd, beta_1, beta_2, epsilon_a, amsgrad, type,
-    name_eval,x_test, y_test, PTest, transformerY) for i in range(tirageMin, tirageMin+nbTirages) for j in range(nbSeeds))
+    algo, batch_size, buffer_size, j, eps, max_epochs, lr, f1, f2, lambd, beta_1, beta_2, epsilon_a, amsgrad, typef,
+    name_eval,x_test, y_test, PTest, transformerY) for i in range(tirageMin, tirageMin+nbTirages) for j in range(nbSeeds)) """
     
-    """ res = [single_sto_sample(name_model, nbNeurons, activations, loss, name_init, params_init, i, metrics, x_train, y_train, PTrain,
-    algo, batch_size, buffer_size, j, eps, max_epochs, lr, f1, f2, lambd, beta_1, beta_2, epsilon_a, amsgrad, type,
-    name_eval,x_test, y_test, PTest, transformerY) for i in range(tirageMin, tirageMin+nbTirages) for j in range(nbSeeds)] """
+    res = [single_sto_sample(name_model, nbNeurons, activations, loss, name_init, params_init, i, metrics, x_train, y_train, PTrain,
+    algo, batch_size, buffer_size, j, eps, max_epochs, lr, f1, f2, lambd, beta_1, beta_2, epsilon_a, amsgrad, typef,
+    name_eval,x_test, y_test, PTest, transformerY) for i in range(tirageMin, tirageMin+nbTirages) for j in range(nbSeeds)]
 
     return res
 

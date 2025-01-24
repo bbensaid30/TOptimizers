@@ -6,7 +6,7 @@ import tirages
 sample_weight=1
 
 # Prepare the training dataset.
-x_train, y_train, x_test, y_test = MNIST_flatten(type)
+x_train, y_train, x_test, y_test = MNIST_flatten(typef)
 
 # architecture.
 name_model="FC"

@@ -97,4 +97,62 @@ def search_dichotomy_batch(model, x, y, optimizer, loss_fn, grads, weight_n, cos
             if(not last_pass):
                 lr=10**m_best
     return lr, iterLoop
-        
+
+#In this case, V_dot=\|grads\|
+def search_normalized_full(model, x, y, optimizer, loss_fn, sample_weight, grads, weight_n, cost_prec, lambd, V_dot, lr, f1):
+    optimizer.learning_rate=lr/V_dot
+    condition=True; iterLoop=0
+    while(condition):
+        optimizer.apply_gradients(zip(grads, model.trainable_weights))
+        with tf.GradientTape() as tape:
+            prediction = model(x, training=True)
+            cost = loss_fn(y, prediction, sample_weight=sample_weight)
+        condition = (cost-cost_prec>-lambd*lr*V_dot)
+        if(condition):
+            lr/=f1; optimizer.learning_rate=lr/V_dot
+            model.set_weights(weight_n)
+        iterLoop+=1
+    grads = tape.gradient(cost, model.trainable_weights)
+    return lr, cost, grads, iterLoop
+
+def search_normalized_dichotomy_full(model, x, y, optimizer, loss_fn, sample_weight, grads, weight_n, cost_prec, lambd, V_dot, f1, lr, nbLoops=3):
+    optimizer.learning_rate=lr/V_dot
+    condition=True; iterLoop=0
+    while(condition):
+        optimizer.apply_gradients(zip(grads, model.trainable_weights))
+        with tf.GradientTape() as tape:
+            prediction = model(x, training=True)
+            cost = loss_fn(y, prediction, sample_weight=sample_weight)
+        condition = cost-cost_prec>-lambd*lr*V_dot
+        if(condition):
+            lr/=f1; optimizer.learning_rate=lr/V_dot
+            model.set_weights(weight_n)
+        iterLoop+=1
+    if(iterLoop>1):
+        droite = np.log10(lr*f1); gauche = np.log10(lr)
+        for k in range(nbLoops):
+            milieu = (gauche+droite)/2; lr=10**milieu; optimizer.learning_rate = lr/V_dot
+            optimizer.apply_gradients(zip(grads, model.trainable_weights))
+            with tf.GradientTape() as tape:
+                prediction = model(x, training=True)
+                cost = loss_fn(y, prediction, sample_weight=sample_weight)
+            if(cost-cost_prec>-lambd*lr*V_dot):
+                m_best = gauche
+                droite = milieu
+                last_pass=False
+            else:
+                gauche = milieu
+                last_pass=True
+            if(k<nbLoops-1):
+                model.set_weights(weight_n)
+            else:
+                if(last_pass==False):
+                    lr=10**m_best; optimizer.learning_rate = lr/V_dot
+                    model.set_weights(weight_n)
+                    optimizer.apply_gradients(zip(grads, model.trainable_weights))
+                    with tf.GradientTape() as tape:
+                        prediction = model(x, training=True)
+                        cost = loss_fn(y, prediction, sample_weight=sample_weight)
+            iterLoop+=1
+    grads = tape.gradient(cost, model.trainable_weights)
+    return lr, cost, grads, iterLoop
