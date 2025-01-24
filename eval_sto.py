@@ -1,4 +1,3 @@
-import tensorflow as tf
 import time
 
 def eval_sto_simple(model,dataset):
