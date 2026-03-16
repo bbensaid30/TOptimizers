@@ -7,18 +7,17 @@ import copy
 
 from linesearch import search_full, search_dichotomy_full
 from linesearch import search_normalized_full, search_normalized_dichotomy_full
-from classic import Adam
+
+from custom_opti import CustomMomentum, CustomRMSProp
 
 
 def LC_EGD(model, loss_fn,
 x,y, eps, max_epochs, lr=0.1, f1=2, f2=10000, lambd=0.5, typef="float32", sample_weight=None):
 
     optimizer = optimizers.SGD(lr)
-    norme_grad=1000; epoch=0; active_Adam=False; epoch_Adam=0
-    if(typef=="float32"):
-        epsilon_machine = np.finfo(np.float32).eps
-    elif(typef=="float64"):
-        epsilon_machine = np.finfo(np.float64).eps
+    norme_grad=1000; epoch=0; active_security=False; epoch_security=0
+    lr_min=1e-9
+
     start_time = time.time()
     while(norme_grad>eps and epoch<max_epochs):
         if(epoch==0):
@@ -34,12 +33,12 @@ x,y, eps, max_epochs, lr=0.1, f1=2, f2=10000, lambd=0.5, typef="float32", sample
             epoch+=1
 
         cost_prec = cost
-        weight_n = model.get_weights()
+        weight_n = [tf.identity(w) for w in model.trainable_weights]
         lr, cost, grads, iterLoop = search_full(model, x, y, optimizer, loss_fn, sample_weight, grads, weight_n, cost_prec, lambd, V_dot, lr, f1)
         #update the weights and the gradient
 
-        if(lr*norme_grad<epsilon_machine):
-            active_Adam=True
+        if(lr<lr_min and lambd!=0):
+            active_security=True
             break
 
         lr*=f2
@@ -56,24 +55,21 @@ x,y, eps, max_epochs, lr=0.1, f1=2, f2=10000, lambd=0.5, typef="float32", sample
             )
             print("grad: ", norme_grad)
 
+    if(active_security==True):
+        print("lambda=0")
+        model,epoch_security, norme_grad,cost,_,_ = LC_EGD(model,loss_fn,x,y,eps,max_epochs-epoch,0.1,f1,f2,0,typef)
     end_time = time.time()
 
-    if(active_Adam==True):
-        print("Active Adam")
-        model,epoch_Adam, norme_grad,cost,_ = Adam(model,loss_fn,x,y,eps,max_epochs-epoch)
-
-    return model, epoch+epoch_Adam, norme_grad, cost, end_time-start_time
+    return model, epoch+epoch_security, norme_grad, cost, end_time-start_time,active_security
 
 def LC_EGD2(model, loss_fn,
-x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, type="float32", sample_weight=None):
+x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, typef="float32", sample_weight=None):
 
     optimizer = optimizers.SGD(lr)
-    if(type=="float32"):
-        epsilon_machine = np.finfo(np.float32).eps
-    elif(type=="float64"):
-        epsilon_machine = np.finfo(np.float64).eps
-    norme_grad=1000; epoch=0; active_Adam=False; epoch_Adam=0
-    nbLoops=3
+    norme_grad=1000; epoch=0; active_security=False; epoch_security=0
+    lr_min=1e-9
+    nbLoops=int(np.log10(f2)/np.log10(f1))
+
     start_time = time.time()
     while(norme_grad>eps and epoch<max_epochs):
 
@@ -91,13 +87,13 @@ x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, type="float32", sample
             print("grad_init: ", norme_grad)
 
         cost_prec = cost
-        weight_n = model.get_weights()
+        weight_n = [tf.identity(w) for w in model.trainable_weights]
         
         lr, cost, grads, iterLoop = search_dichotomy_full(model, x, y, optimizer, loss_fn, sample_weight, grads, weight_n, cost_prec, lambd, V_dot, f1, lr, nbLoops)
-        if(lr*norme_grad<epsilon_machine):
-            active_Adam=True; break
+        if(lr<lr_min and lambd!=0):
+            active_security=True
+            break
 
-        print("lr: ", lr)
         lr*=f2
 
         norme_grad= tf.linalg.global_norm(grads); V_dot=norme_grad**2
@@ -109,25 +105,165 @@ x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, type="float32", sample
             print("Loss: ", cost)
             print("grad: ", norme_grad)
         
-    if(active_Adam):
-        print("Adam débute")
-        model,epoch_Adam, norme_grad,cost,time_Adam= Adam(model,loss_fn,x,y,eps,max_epochs,0.001,0.9,0.999,10**(-7),False,sample_weight)
-
+    if(active_security==True):
+        print("lambda=0")
+        model,epoch_security, norme_grad,cost,_,_ = LC_EGD2(model,loss_fn,x,y,eps,max_epochs-epoch,0.1,f1,f2,0,typef)
     end_time = time.time()
 
-    return model, epoch+epoch_Adam, norme_grad, cost, end_time-start_time
+    return model, epoch+epoch_security, norme_grad, cost, end_time-start_time, active_security
 
+def LC_Momentum(model, loss_fn,
+x,y, eps, max_epochs, lr=0.1, f1=2, f2=10000, lambd=0.5, beta_1=0.9, typef="float32", sample_weight=None):
+
+    optimizer = CustomMomentum(lr,beta_1)
+    optimizer.build(model.trainable_weights)
+    norme_grad=1000; epoch=0; active_security=False; epoch_security=0
+    lr_min=1e-9
+
+    start_time = time.time()
+    while(norme_grad>eps and epoch<max_epochs):
+        if(epoch==0):
+            with tf.GradientTape() as tape:
+                prediction = model(x, training=True)
+                cost = loss_fn(y, prediction,sample_weight=sample_weight)
+                print("cost_init: ", cost)
+            grads = tape.gradient(cost, model.trainable_weights)
+            norme_grad = tf.linalg.global_norm(grads)
+            v_norm2 = 0
+            V=cost+0.5*v_norm2; V_dot=(1-beta_1)*v_norm2
+            if(norme_grad<eps):
+                break
+            print("grad_init: ", norme_grad)
+            epoch+=1
+
+        #linesearch for Momentum
+        optimizer.learning_rate=lr
+        V_prec = V
+        weight_n = [tf.identity(w) for w in model.trainable_weights]
+        v_prev = [tf.identity(v) for v in optimizer.v]
+        condition=True; iterLoop=0
+        while(condition):
+            optimizer.apply_gradients(zip(grads, model.trainable_weights))
+            with tf.GradientTape() as tape:
+                prediction = model(x, training=True)
+                cost = loss_fn(y, prediction, sample_weight=sample_weight)
+            v_norm2 = tf.linalg.global_norm(optimizer.v)**2
+            V=cost+0.5*v_norm2; V_dot=(1-beta_1)*v_norm2
+            condition = (V-V_prec>-lambd*V_dot)
+            if(condition):
+                lr/=f1; optimizer.learning_rate=lr
+                for w,val in zip(model.trainable_weights, weight_n):
+                    w.assign(val)
+                for var,val in zip(optimizer.v, v_prev):
+                    var.assign(val)
+            iterLoop+=1
+
+        if(lr<lr_min and lambd!=0):
+            active_security=True
+            break
+
+        lr*=f2
+
+        grads = tape.gradient(cost, model.trainable_weights)
+        norme_grad= tf.linalg.global_norm(grads)
+
+        epoch+=1    
+
+        if epoch % 1 == 0:
+            print("\nStart of epoch %d" % (epoch,))
+            print(
+                "Training loss (for one batch) at epoch %d: %.8f"
+                % (epoch, float(cost))
+            )
+            print("grad: ", norme_grad)
+
+    if(active_security==True):
+        print("lambda=0")
+        model,epoch_security, norme_grad,cost,_,_ = LC_Momentum(model,loss_fn,x,y,eps,max_epochs-epoch,0.1,f1,f2,0,beta_1,typef)
+    end_time = time.time()
+
+    return model, epoch+epoch_security, norme_grad, cost, end_time-start_time,active_security
+
+def LC_RMS(model, loss_fn,
+x,y, eps, max_epochs, lr=0.1, f1=2, f2=10000, lambd=0.5, beta_2=0.999, eps_a=1e-10, typef="float32", sample_weight=None):
+
+    optimizer = CustomRMSProp(lr,beta_2,eps_a)
+    optimizer.build(model.trainable_weights)
+    norme_grad=1000; epoch=0; active_security=False; epoch_security=0
+    lr_min=1e-9
+
+    start_time = time.time()
+    while(norme_grad>eps and epoch<max_epochs):
+        if(epoch==0):
+            with tf.GradientTape() as tape:
+                prediction = model(x, training=True)
+                cost = loss_fn(y, prediction,sample_weight=sample_weight)
+                print("cost_init: ", cost)
+            grads = tape.gradient(cost, model.trainable_weights)
+            norme_grad = tf.linalg.global_norm(grads)
+            
+            if(norme_grad<eps):
+                break
+            print("grad_init: ", norme_grad)
+            epoch+=1
+
+        #linesearch for Momentum
+        optimizer.learning_rate=lr
+        cost_prec = cost
+        weight_n = [tf.identity(w) for w in model.trainable_weights]
+        s_prev = [tf.identity(s) for s in optimizer.s]
+        condition=True; iterLoop=0
+        while(condition):
+            optimizer.apply_gradients(zip(grads, model.trainable_weights))
+            with tf.GradientTape() as tape:
+                prediction = model(x, training=True)
+                cost = loss_fn(y, prediction, sample_weight=sample_weight)
+            V_dot = 0
+            for i, grad in enumerate(grads):
+                V_dot+=tf.norm(grad/tf.pow(eps_a+optimizer.s[i],0.25))**2
+            condition = (cost-cost_prec>-lambd*lr*V_dot)
+            if(condition):
+                lr/=f1; optimizer.learning_rate=lr
+                for w,val in zip(model.trainable_weights, weight_n):
+                    w.assign(val)
+                for var,val in zip(optimizer.s, s_prev):
+                    var.assign(val)
+            iterLoop+=1
+
+        if(lr<lr_min and lambd!=0):
+            active_security=True
+            break
+
+        lr*=f2
+
+        grads = tape.gradient(cost, model.trainable_weights)
+        norme_grad= tf.linalg.global_norm(grads)
+
+        epoch+=1    
+
+        if epoch % 1 == 0:
+            print("\nStart of epoch %d" % (epoch,))
+            print(
+                "Training loss (for one batch) at epoch %d: %.8f"
+                % (epoch, float(cost))
+            )
+            print("grad: ", norme_grad)
+
+    if(active_security==True):
+        print("lambda=0")
+        model,epoch_security, norme_grad,cost,_,_ = LC_RMS(model,loss_fn,x,y,eps,max_epochs-epoch,0.1,f1,f2,0,beta_2,eps_a,typef)
+    end_time = time.time()
+
+    return model, epoch+epoch_security, norme_grad, cost, end_time-start_time,active_security
 
 def LC_NGD(model, loss_fn,
 x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, typef="float32", sample_weight=None):
 
     optimizer = optimizers.SGD(lr)
-    if(typef=="float32"):
-        epsilon_machine = np.finfo(np.float32).eps
-    elif(typef=="float64"):
-        epsilon_machine = np.finfo(np.float64).eps
-    norme_grad=1000; epoch=0; active_Adam=False; epoch_Adam=0
-    nbLoops=3
+    norme_grad=1000; epoch=0; active_security=False; epoch_security=0
+    lr_min=1e-9
+    nbLoops=int(np.log10(f2)/np.log10(f1))
+
     start_time = time.time()
     while(norme_grad>eps and epoch<max_epochs):
 
@@ -136,23 +272,21 @@ x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, typef="float32", sampl
                 prediction = model(x, training=True)
 
                 cost = loss_fn(y, prediction,sample_weight=sample_weight)
-                print("cost_init: ", cost)
 
             grads = tape.gradient(cost, model.trainable_weights)
             norme_grad = tf.linalg.global_norm(grads)
             if(norme_grad<eps):
                 break
-            print("grad_init: ", norme_grad)
 
         cost_prec = cost
         weight_n = copy.deepcopy(model.get_weights())
         
         lr, cost, grads, iterLoop = search_normalized_dichotomy_full(model, x, y, optimizer, loss_fn, sample_weight, grads, weight_n, cost_prec, lambd, norme_grad, f1, lr, nbLoops)
 
-        if(lr*norme_grad<epsilon_machine):
-            active_Adam=False; break
+        if(lr<lr_min and lambd!=0):
+            active_security=True
+            break
 
-        print("lr: ", lr)
         lr*=f2
 
         norme_grad= tf.linalg.global_norm(grads)
@@ -164,13 +298,12 @@ x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, typef="float32", sampl
             print("Loss: ", cost)
             print("grad: ", norme_grad)
         
-    if(active_Adam):
-        print("Adam débute")
-        model,epoch_Adam, norme_grad,cost,time_Adam= Adam(model,loss_fn,x,y,eps,max_epochs,0.001,0.9,0.999,10**(-7),False,sample_weight)
-
+    if(active_security==True):
+        print("lambda=0")
+        model,epoch_security, norme_grad,cost,_,_ = LC_NGD(model,loss_fn,x,y,eps,max_epochs-epoch,0.1,f1,f2,0,typef)
     end_time = time.time()
 
-    return model, epoch+epoch_Adam, norme_grad, cost, end_time-start_time
+    return model, epoch+epoch_security, norme_grad, cost, end_time-start_time, active_security
 
 def ER(model,model_inter,loss_fn,
 x,y, eps, max_epochs, lr=0.1, seuil=0.01, sample_weight=None):
