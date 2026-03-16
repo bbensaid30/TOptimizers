@@ -40,7 +40,7 @@ x,y, eps, max_epochs, lr=0.001, beta_1=0.9, beta_2=0.999,epsilon=1e-07,amsgrad=F
 
     end_time = time.time()
 
-    return model, epoch, norme_grad, cost, end_time-start_time
+    return model, epoch, norme_grad, cost, end_time-start_time,False
 
 def RMSProp(model,loss_fn,
 x,y, eps, max_epochs, lr=0.001, beta_2=0.9, epsilon=1e-07, sample_weight=None):
@@ -90,7 +90,7 @@ x,y, eps, max_epochs, lr=0.001, beta_2=0.9, epsilon=1e-07, sample_weight=None):
 
     end_time = time.time()
 
-    return model, epoch, norme_grad, cost, end_time-start_time
+    return model, epoch, norme_grad, cost, end_time-start_time,False
 
 def Momentum(model,loss_fn,
 x,y, eps, max_epochs, lr=0.01, beta_1=0.9, sample_weight=None):
@@ -102,8 +102,6 @@ x,y, eps, max_epochs, lr=0.01, beta_1=0.9, sample_weight=None):
         with tf.GradientTape() as tape:
             prediction = model(x, training=True)
             cost = loss_fn(y, prediction, sample_weight=sample_weight)
-        if(epoch==0):
-            print("cost_init: ", cost)
 
         grads = tape.gradient(cost, model.trainable_weights)
         norme_grad = tf.linalg.global_norm(grads)
@@ -122,7 +120,7 @@ x,y, eps, max_epochs, lr=0.01, beta_1=0.9, sample_weight=None):
 
     end_time = time.time()
 
-    return model, epoch, norme_grad, cost, end_time-start_time
+    return model, epoch, norme_grad, cost, end_time-start_time,False
 
 def GD(model,loss_fn,
 x,y, eps, max_epochs, lr=0.01, sample_weight=None):
@@ -154,7 +152,7 @@ x,y, eps, max_epochs, lr=0.01, sample_weight=None):
 
     end_time = time.time()
 
-    return model, epoch, norme_grad, cost, end_time-start_time
+    return model, epoch, norme_grad, cost, end_time-start_time,False
 
 def GD_clip(model,loss_fn,
 x,y, eps, max_epochs, lr=0.01, sample_weight=None):
@@ -186,4 +184,4 @@ x,y, eps, max_epochs, lr=0.01, sample_weight=None):
 
     end_time = time.time()
 
-    return model, epoch, norme_grad, cost, end_time-start_time
+    return model, epoch, norme_grad, cost, end_time-start_time,False
