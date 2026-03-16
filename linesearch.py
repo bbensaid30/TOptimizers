@@ -13,7 +13,8 @@ def search_full(model, x, y, optimizer, loss_fn, sample_weight, grads, weight_n,
         condition = (cost-cost_prec>-lambd*lr*V_dot)
         if(condition):
             lr/=f1; optimizer.learning_rate=lr
-            model.set_weights(weight_n)
+            for w,val in zip(model.trainable_weights, weight_n):
+                w.assign(val)
         iterLoop+=1
     grads = tape.gradient(cost, model.trainable_weights)
     return lr, cost, grads, iterLoop
@@ -29,7 +30,8 @@ def search_dichotomy_full(model, x, y, optimizer, loss_fn, sample_weight, grads,
         condition = cost-cost_prec>-lambd*lr*V_dot
         if(condition):
             lr/=f1; optimizer.learning_rate=lr
-            model.set_weights(weight_n)
+            for w,val in zip(model.trainable_weights, weight_n):
+                w.assign(val)
         iterLoop+=1
     if(iterLoop>1):
         droite = np.log10(lr*f1); gauche = np.log10(lr)
@@ -47,11 +49,13 @@ def search_dichotomy_full(model, x, y, optimizer, loss_fn, sample_weight, grads,
                 gauche = milieu
                 last_pass=True
             if(k<nbLoops-1):
-                model.set_weights(weight_n)
+                for w,val in zip(model.trainable_weights, weight_n):
+                    w.assign(val)
             else:
                 if(last_pass==False):
                     lr=10**m_best; optimizer.learning_rate = lr
-                    model.set_weights(weight_n)
+                    for w,val in zip(model.trainable_weights, weight_n):
+                        w.assign(val)
                     optimizer.apply_gradients(zip(grads, model.trainable_weights))
                     with tf.GradientTape() as tape:
                         prediction = model(x, training=True)
