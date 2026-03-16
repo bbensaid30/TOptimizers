@@ -24,7 +24,7 @@ name_eval,x_test,y_test,transformerY=None,sample_weight_eval=None):
     model.summary()
 
     #train the model
-    model, epochs, norme_grad, cost_final, temps = train(algo,model, loss,x_train,y_train,eps,max_epochs,
+    model, epochs, norme_grad, cost_final, temps, active_security = train(algo,model, loss,x_train,y_train,eps,max_epochs,
     lr,seuil,f1,f2,rho,eps_egd,lambd,beta_1,beta_2,epsilon,amsgrad,typef,sample_weight)
     dico['num_tirage'] = seed
     dico['epochs'] = epochs

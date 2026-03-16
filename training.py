@@ -14,6 +14,10 @@ beta_1 = 0.9, beta_2=0.999, epsilon_a=1e-07, amsgrad=False, typef="float32", sam
         return perso.LC_NGD(model,loss_fn,x,y,eps,max_epochs,lr,f1,f2,lambd,typef,sample_weight)
     elif(algo=="LC_EGD2"):
         return perso.LC_EGD2(model,loss_fn,x,y,eps,max_epochs,lr,f1,f2,lambd,typef,sample_weight)
+    elif(algo=="LC_Momentum"):
+        return perso.LC_Momentum(model,loss_fn,x,y,eps,max_epochs,lr,f1,f2,lambd,beta_1,typef,sample_weight)
+    elif(algo=="LC_RMS"):
+        return perso.LC_RMS(model,loss_fn,x,y,eps,max_epochs,lr,f1,f2,lambd,beta_2,epsilon_a,typef,sample_weight)
     elif(algo=="Momentum"):
         return classic.Momentum(model,loss_fn,x,y,eps,max_epochs,lr,beta_1,sample_weight)
     elif(algo=="Adam"):
