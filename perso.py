@@ -38,6 +38,8 @@ x,y, eps, max_epochs, lr=0.1, f1=2, f2=10000, lambd=0.5, typef="float32", sample
         if(lr<lr_min and lambd!=0):
             active_security=True
             break
+        if(lr<lr_min and lambd==0):
+            break
 
         lr*=f2
 
@@ -79,6 +81,8 @@ x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, typef="float32", sampl
         lr, cost, grads, iterLoop = search_dichotomy_full(model, x, y, optimizer, loss_fn, sample_weight, grads, weight_n, cost_prec, lambd, V_dot, f1, lr, nbLoops)
         if(lr<lr_min and lambd!=0):
             active_security=True
+            break
+        if(lr<lr_min and lambd==0):
             break
 
         lr*=f2
@@ -139,6 +143,8 @@ x,y, eps, max_epochs, lr=0.1, f1=2, f2=10000, lambd=0.5, beta_1=0.9, typef="floa
 
         if(lr<lr_min and lambd!=0):
             active_security=True
+            break
+        if(lr<lr_min and lambd==0):
             break
 
         lr*=f2
@@ -239,6 +245,8 @@ x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, beta_1=0.9, typef="flo
         if(lr<lr_min and lambd!=0):
             active_security=True
             break
+        if(lr<lr_min and lambd==0):
+            break
 
         lr*=f2
 
@@ -299,6 +307,8 @@ x,y, eps, max_epochs, lr=0.1, f1=2, f2=10000, lambd=0.5, beta_2=0.999, eps_a=1e-
 
         if(lr<lr_min and lambd!=0):
             active_security=True
+            break
+        if(lr<lr_min and lambd==0):
             break
 
         lr*=f2
@@ -398,6 +408,8 @@ x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, beta_2=0.999, eps_a=1e
         if(lr<lr_min and lambd!=0):
             active_security=True
             break
+        if(lr<lr_min and lambd==0):
+            break
 
         lr*=f2
 
@@ -440,6 +452,8 @@ x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, typef="float32", sampl
 
         if(lr<lr_min and lambd!=0):
             active_security=True
+            break
+        if(lr<lr_min and lambd==0):
             break
 
         lr*=f2
