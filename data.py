@@ -1,5 +1,5 @@
 import os
-os.chdir("/home/bbensaid/Documents/Anabase/NN")
+os.chdir("/home/bbensaid/Documents/Anabase/TOptimizers")
 
 from keras import datasets
 from keras.utils import to_categorical
