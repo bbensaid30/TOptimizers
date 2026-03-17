@@ -6,6 +6,7 @@ from joblib import Parallel, delayed
 import tensorflow as tf
 
 import io
+import datetime
 from tqdm import tqdm
 import traceback   
 import gc
@@ -62,7 +63,7 @@ name_eval,x_test,y_test,transformerY=None,sample_weight_eval=None):
             print(e)
 
     try:
-        dico = {'name_model': name_model, 'algo': algo}
+        dico = {'name_model': name_model, 'opti': algo}
 
         dico["name_init"]=name_init
         dico["eps"]=eps
@@ -70,6 +71,7 @@ name_eval,x_test,y_test,transformerY=None,sample_weight_eval=None):
         dico["lr"]=lr; dico["f1"]=f1; dico["f2"]=f2; dico["lambd"]=lambd
         dico["beta1"]=beta_1; dico["beta2"]=beta_2; dico["epsilon_a"]=epsilon
         dico["status"]="pending"
+        dico["timestamp"] = datetime.datetime.now().isoformat()
 
 
         #build the model
