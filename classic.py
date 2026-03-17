@@ -15,8 +15,6 @@ x,y, eps, max_epochs, lr=0.001, beta_1=0.9, beta_2=0.999,epsilon=1e-07,amsgrad=F
         with tf.GradientTape() as tape:
             prediction = model(x, training=True)
             cost = loss_fn(y, prediction, sample_weight=sample_weight)
-        if(epoch==0):
-            print("cost_init: ", cost)
 
         grads = tape.gradient(cost, model.trainable_weights)
         norme_grad = tf.linalg.global_norm(grads)
@@ -25,18 +23,6 @@ x,y, eps, max_epochs, lr=0.001, beta_1=0.9, beta_2=0.999,epsilon=1e-07,amsgrad=F
         optimizer.apply_gradients(zip(grads, model.trainable_weights))
 
         epoch+=1
-
-        if epoch % 2 == 0:
-            print(
-                "Training loss (for one batch) at step %d: %.8f"
-                % (epoch, float(cost))
-            )
-            print("grad: ", norme_grad)
-    
-
-    """ print("epochs: ", epoch)
-    print("grad_norm: ", norme_grad)
-    print("cost_final: ", cost) """
 
     end_time = time.time()
 
@@ -61,8 +47,6 @@ x,y, eps, max_epochs, lr=0.001, beta_2=0.9, epsilon=1e-07, sample_weight=None):
 
         # Compute the loss value for this minibatch.
             cost = loss_fn(y, prediction,sample_weight=sample_weight)
-        if(epoch==0):
-            print("cost_init: ", cost)
 
         grads = tape.gradient(cost, model.trainable_weights)
         norme_grad = tf.linalg.global_norm(grads)
@@ -74,19 +58,6 @@ x,y, eps, max_epochs, lr=0.001, beta_2=0.9, epsilon=1e-07, sample_weight=None):
         optimizer.apply_gradients(zip(grads, model.trainable_weights))
 
         epoch+=1
-
-        # Log every 100 batches.
-        if epoch % 2 == 0:
-            print(
-                "Training loss (for one batch) at step %d: %.8f"
-                % (epoch, float(cost))
-            )
-            print("grad: ", norme_grad)
-            #print("Seen so far: %s samples" % ((step + 1) * batch_size))
-
-    print("epochs: ", epoch)
-    print("grad_norm: ", norme_grad)
-    print("cost_final: ", cost)
 
     end_time = time.time()
 
@@ -111,13 +82,6 @@ x,y, eps, max_epochs, lr=0.01, beta_1=0.9, sample_weight=None):
 
         epoch+=1
 
-        if epoch % 2 == 0:
-            print(
-                "Training loss (for one batch) at step %d: %.8f"
-                % (epoch, float(cost))
-            )
-            print("grad: ", norme_grad)
-
     end_time = time.time()
 
     return model, epoch, norme_grad, cost, end_time-start_time,False
@@ -132,8 +96,6 @@ x,y, eps, max_epochs, lr=0.01, sample_weight=None):
         with tf.GradientTape() as tape:
             prediction = model(x, training=True)
             cost = loss_fn(y, prediction, sample_weight=sample_weight)
-        if(epoch==0):
-            print("cost_init: ", cost)
 
         grads = tape.gradient(cost, model.trainable_weights)
         norme_grad = tf.linalg.global_norm(grads)
@@ -142,13 +104,6 @@ x,y, eps, max_epochs, lr=0.01, sample_weight=None):
         optimizer.apply_gradients(zip(grads, model.trainable_weights))
 
         epoch+=1
-
-        if epoch % 2 == 0:
-            print(
-                "Training loss (for one batch) at step %d: %.8f"
-                % (epoch, float(cost))
-            )
-            print("grad: ", norme_grad)
 
     end_time = time.time()
 
@@ -164,8 +119,6 @@ x,y, eps, max_epochs, lr=0.01, sample_weight=None):
         with tf.GradientTape() as tape:
             prediction = model(x, training=True)
             cost = loss_fn(y, prediction, sample_weight=sample_weight)
-        if(epoch==0):
-            print("cost_init: ", cost)
 
         grads = tape.gradient(cost, model.trainable_weights)
         norme_grad = tf.linalg.global_norm(grads)
@@ -174,13 +127,6 @@ x,y, eps, max_epochs, lr=0.01, sample_weight=None):
         optimizer.apply_gradients(zip(tf.clip_by_global_norm(grads, eps, use_norm=norme_grad)), model.trainable_weights)
 
         epoch+=1
-
-        if epoch % 2 == 0:
-            print(
-                "Training loss (for one batch) at step %d: %.8f"
-                % (epoch, float(cost))
-            )
-            print("grad: ", norme_grad)
 
     end_time = time.time()
 
