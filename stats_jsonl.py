@@ -50,7 +50,7 @@ def plot_dual_boxplots_article(df, metrique='cost_test'):
     if metrique in ["cost_train", "cost_test"]:
         ax1.set_yscale('log')
         ax1.set_ylabel('Loss (Log Scale)', fontsize=14, fontweight='bold', color='red')
-    elif metrique in ["acc_train","acc_test"]:
+    elif metrique in ["categorical_accuracy_train","categorical_accuracy_test"]:
         ax1.set_ylabel('% of well classified', fontsize=14, fontweight='bold', color='red')
     ax1.tick_params(axis='y', labelcolor='red')
 
@@ -175,9 +175,9 @@ def plot_performance_profile(df, loss_col='cost_test'):
     plt.tight_layout()
     plt.show()
 
-filename="polyThree.jsonl"
-df=read_jsonl(filename)
+folder="FASHION_MNIST/"
+df=preparer_donnees(folder)
 
 #print(df[df['opti'] == "Momentum"]["cost_train"])
-#plot_dual_boxplots_article(df,"cost_train")
-plot_performance_profile(df,"cost_train")
+plot_dual_boxplots_article(df,"categorical_accuracy_test")
+#plot_performance_profile(df,"cost_train")
