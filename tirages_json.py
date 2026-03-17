@@ -2,7 +2,7 @@ import os
 os.chdir("/home/bbensaid/Documents/Anabase/TOptimizers")
 
 import numpy as np
-from joblib import Parallel, delayed
+from joblib import Parallel, delayed, parallel_backend
 import tensorflow as tf
 
 import io
@@ -10,17 +10,16 @@ import datetime
 from tqdm import tqdm
 import traceback   
 import gc
-from numpy import format_float_scientific as ffs
 
 import json
-from filelock import FileLock # Installe-le via: pip install filelock
+from filelock import FileLock
 
 from model import build_model
 from training import train
 from eval import eval_global
 
 num_cpus = 4; num_gpus=2
-n_jobs=-1
+n_jobs=3
 
 def append_to_jsonl(dico, filename="results.jsonl"):
     def safe_convert(obj):
@@ -139,6 +138,12 @@ def tirages_json(filename, tirageMin, nbTirages,
     name_model, nbNeurons, activations, loss, name_init, params, metrics, x_train, y_train,
     algo, eps, max_epochs, lr, seuil, f1, f2, rho, eps_egd, lambd, beta_1, beta_2, epsilon, amsgrad, typef, sample_weight,
     name_eval,x_test,y_test,transformerY=None,sample_weight_eval=None):
+
+    """ with parallel_backend('loky', n_jobs=n_jobs):
+        res = Parallel()(delayed(single_sample_json)(
+            filename, name_model, nbNeurons, activations, loss, name_init, params, i, metrics, x_train, y_train,
+            algo, eps, max_epochs, lr, seuil, f1, f2, rho, eps_egd, lambd, beta_1, beta_2, epsilon, amsgrad, typef, sample_weight,
+            name_eval,x_test,y_test,transformerY,sample_weight_eval) for i in tqdm(range(tirageMin, tirageMin + nbTirages), desc="Tirages en cours")) """
 
     # On définit le nombre de tâches par worker avant de le tuer
     with Parallel(n_jobs=n_jobs, max_tasks_per_child=1) as parallel:
