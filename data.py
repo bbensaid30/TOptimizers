@@ -136,7 +136,7 @@ def FASHION_MNIST_flatten(typef="float32"):
         return tf.convert_to_tensor(x_train,dtype=tf.float32), tf.convert_to_tensor(y_train,dtype=tf.float32), tf.convert_to_tensor(x_test,dtype=tf.float32), tf.convert_to_tensor(y_test,dtype=tf.float32)
 
 def FASHION_MNIST(typef="float32"):
-    ((trainData, trainLabels), (testData, testLabels)) = datasets.mnist.load_data()
+    ((trainData, trainLabels), (testData, testLabels)) = datasets.fashion_mnist.load_data()
 
     trainData = trainData.reshape((trainData.shape[0], 28, 28, 1))
     testData = testData.reshape((testData.shape[0], 28, 28, 1))
