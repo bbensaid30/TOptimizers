@@ -1,6 +1,3 @@
-import os
-os.chdir("/home/bbensaid/Documents/Anabase/TOptimizers")
-
 import numpy as np
 from joblib import Parallel, delayed, parallel_backend
 import tensorflow as tf
@@ -17,9 +14,6 @@ from filelock import FileLock
 from model import build_model
 from training import train
 from eval import eval_global
-
-num_cpus = 4; num_gpus=2
-n_jobs=3
 
 def append_to_jsonl(dico, filename="results.jsonl"):
     def safe_convert(obj):
@@ -134,7 +128,7 @@ name_eval,x_test,y_test,transformerY=None,sample_weight_eval=None):
 
     return dico
 
-def tirages_json(filename, tirageMin, nbTirages,
+def tirages_json(n_jobs, filename, tirageMin, nbTirages,
     name_model, nbNeurons, activations, loss, name_init, params, metrics, x_train, y_train,
     algo, eps, max_epochs, lr, seuil, f1, f2, rho, eps_egd, lambd, beta_1, beta_2, epsilon, amsgrad, typef, sample_weight,
     name_eval,x_test,y_test,transformerY=None,sample_weight_eval=None):
