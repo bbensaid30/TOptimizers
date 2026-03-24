@@ -40,7 +40,7 @@ def append_to_jsonl(dico, filename="results.jsonl"):
 
 #os.environ['OMP_NUM_THREADS'] = '1'
 def single_sample_json(filename, name_model, nbNeurons, activations, loss, name_init, params_init, seed, metrics, x_train, y_train,
-algo, eps, max_epochs, lr, seuil, f1, f2, rho, eps_egd, lambd, beta_1, beta_2, epsilon, amsgrad, typef, sample_weight,
+algo, eps, max_epochs, lr, seuil, f1, f2, lambd, beta_1, beta_2, epsilon, amsgrad, typef, sample_weight,
 name_eval,x_test,y_test,transformerY=None,sample_weight_eval=None):
     
     gpus = tf.config.list_physical_devices('GPU')
@@ -77,7 +77,7 @@ name_eval,x_test,y_test,transformerY=None,sample_weight_eval=None):
 
         #train the model
         results=train(algo,model, loss,x_train,y_train,eps,max_epochs,
-        lr,seuil,f1,f2,rho,eps_egd,lambd,beta_1,beta_2,epsilon,amsgrad,typef,sample_weight)
+        lr,seuil,f1,f2,lambd,beta_1,beta_2,epsilon,amsgrad,typef,sample_weight)
         if results is None:
             raise ValueError("La fonction train() a renvoyé None")
         model, epochs, norme_grad, cost_final, temps, active_security = results
@@ -130,7 +130,7 @@ name_eval,x_test,y_test,transformerY=None,sample_weight_eval=None):
 
 def tirages_json(n_jobs, filename, tirageMin, nbTirages,
     name_model, nbNeurons, activations, loss, name_init, params, metrics, x_train, y_train,
-    algo, eps, max_epochs, lr, seuil, f1, f2, rho, eps_egd, lambd, beta_1, beta_2, epsilon, amsgrad, typef, sample_weight,
+    algo, eps, max_epochs, lr, weight_decay, f1, f2, lambd, beta_1, beta_2, epsilon, amsgrad, typef, sample_weight,
     name_eval,x_test,y_test,transformerY=None,sample_weight_eval=None):
 
     """ with parallel_backend('loky', n_jobs=n_jobs):
@@ -144,8 +144,8 @@ def tirages_json(n_jobs, filename, tirageMin, nbTirages,
         res = parallel(
         delayed(single_sample_json)(filename,
             name_model, nbNeurons, activations, loss, name_init, params, i, 
-            metrics, x_train, y_train, algo, eps, max_epochs, lr, seuil, 
-            f1, f2, rho, eps_egd, lambd, beta_1, beta_2, epsilon, amsgrad, 
+            metrics, x_train, y_train, algo, eps, max_epochs, lr, weight_decay, 
+            f1, f2, lambd, beta_1, beta_2, epsilon, amsgrad, 
             typef, sample_weight, name_eval, x_test, y_test, 
             transformerY, sample_weight_eval
         ) for i in tqdm(range(tirageMin, tirageMin + nbTirages), desc="Tirages en cours")
