@@ -1,0 +1,14 @@
+name: LCD2026
+channels:
+  - nodefaults
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.10.20
+  - tensorflow
+  - numpy
+  - joblib
+  - matplotlib
+  - seaborn
+  - keras
+  - scikit-learn
