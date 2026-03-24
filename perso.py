@@ -1,8 +1,8 @@
-from cmath import isnan
 from keras import optimizers
 import tensorflow as tf
-import time
+from tensorflow.experimental import numpy as tnp
 import numpy as np
+import time
 import copy
 
 from linesearch import search_full, search_dichotomy_full
@@ -12,14 +12,14 @@ from custom_opti import CustomMomentum, CustomRMSProp
 
 
 def LC_GD(model, loss_fn,
-x,y, eps, max_epochs, lr=0.1, f1=2, f2=10000, lambd=0.5, typef="float32", sample_weight=None):
+x,y, eps, max_epochs, lr=0.1, f1=2, f2=10000, lambd=0.5, typef=tf.float32, sample_weight=None):
 
     optimizer = optimizers.SGD(lr)
-    norme_grad=1000; epoch=0; active_security=False; epoch_security=0
-    lr_min=1e-9
+    norme_grad=tf.constant(1000,dtype=typef); epoch=0; active_security=False
+    lr_min=tnp.finfo(typef).eps
 
     start_time = time.time()
-    while(norme_grad>eps and epoch<max_epochs):
+    while(norme_grad>eps and epoch<max_epochs and tf.math.is_nan(norme_grad)==False):
         if(epoch==0):
             with tf.GradientTape() as tape:
                 prediction = model(x, training=True)
@@ -32,14 +32,15 @@ x,y, eps, max_epochs, lr=0.1, f1=2, f2=10000, lambd=0.5, typef="float32", sample
 
         cost_prec = cost
         weight_n = [tf.identity(w) for w in model.trainable_weights]
-        lr, cost, grads, iterLoop = search_full(model, x, y, optimizer, loss_fn, sample_weight, grads, weight_n, cost_prec, lambd, V_dot, lr, f1)
+        lr, cost, grads, _ = search_full(model, x, y, optimizer, loss_fn, sample_weight, grads, weight_n, cost_prec, lambd, V_dot, lr, lr_min, f1)
         #update the weights and the gradient
 
-        if(lr<lr_min and lambd!=0):
-            active_security=True
-            break
-        if(lr<lr_min and lambd==0):
-            break
+        if(lr<lr_min):
+            if(lambd!=0):
+                active_security=True
+                lambd=0
+            else:
+                break
 
         lr*=f2
 
@@ -47,22 +48,20 @@ x,y, eps, max_epochs, lr=0.1, f1=2, f2=10000, lambd=0.5, typef="float32", sample
 
         epoch+=1    
 
-    if(active_security==True):
-        model,epoch_security, norme_grad,cost,_,_ = LC_GD(model,loss_fn,x,y,eps,max_epochs-epoch,0.1,f1,f2,0,typef)
     end_time = time.time()
 
-    return model, epoch+epoch_security, norme_grad, cost, end_time-start_time,active_security
+    return model, epoch, norme_grad, cost, end_time-start_time,active_security
 
 def LCD_GD(model, loss_fn,
-x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, typef="float32", sample_weight=None):
+x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, typef=tf.float32, sample_weight=None):
 
     optimizer = optimizers.SGD(lr)
-    norme_grad=1000; epoch=0; active_security=False; epoch_security=0
-    lr_min=1e-9
+    norme_grad=tf.constant(1000,dtype=typef); epoch=0; active_security=False
+    lr_min=tnp.finfo(typef).eps
     nbLoops=int(np.log10(f2)/np.log10(f1))
 
     start_time = time.time()
-    while(norme_grad>eps and epoch<max_epochs):
+    while(norme_grad>eps and epoch<max_epochs and tf.math.is_nan(norme_grad)==False):
 
         if(epoch==0):
             with tf.GradientTape() as tape:
@@ -78,12 +77,13 @@ x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, typef="float32", sampl
         cost_prec = cost
         weight_n = [tf.identity(w) for w in model.trainable_weights]
         
-        lr, cost, grads, iterLoop = search_dichotomy_full(model, x, y, optimizer, loss_fn, sample_weight, grads, weight_n, cost_prec, lambd, V_dot, f1, lr, nbLoops)
-        if(lr<lr_min and lambd!=0):
-            active_security=True
-            break
-        if(lr<lr_min and lambd==0):
-            break
+        lr, cost, grads, _ = search_dichotomy_full(model, x, y, optimizer, loss_fn, sample_weight, grads, weight_n, cost_prec, lambd, V_dot, f1, lr, lr_min, nbLoops)
+        if(lr<lr_min):
+            if(lambd!=0):
+                active_security=True
+                lambd=0
+            else:
+                break
 
         lr*=f2
 
@@ -91,22 +91,20 @@ x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, typef="float32", sampl
 
         epoch+=1    
         
-    if(active_security==True):
-        model,epoch_security, norme_grad,cost,_,_ = LCD_GD(model,loss_fn,x,y,eps,max_epochs-epoch,0.1,f1,f2,0,typef)
     end_time = time.time()
 
-    return model, epoch+epoch_security, norme_grad, cost, end_time-start_time, active_security
+    return model, epoch, norme_grad, cost, end_time-start_time, active_security
 
 def LC_Mom(model, loss_fn,
-x,y, eps, max_epochs, lr=0.1, f1=2, f2=10000, lambd=0.5, beta_1=0.9, typef="float32", sample_weight=None):
+x,y, eps, max_epochs, lr=0.1, f1=2, f2=10000, lambd=0.5, beta_1=0.9, typef=tf.float32, sample_weight=None):
 
     optimizer = CustomMomentum(lr,beta_1)
     optimizer.build(model.trainable_weights)
-    norme_grad=1000; epoch=0; active_security=False; epoch_security=0
-    lr_min=1e-9
+    norme_grad=tf.constant(1000,dtype=typef); epoch=0; active_security=False
+    lr_min=tnp.finfo(typef).eps
 
     start_time = time.time()
-    while(norme_grad>eps and epoch<max_epochs):
+    while(norme_grad>eps and epoch<max_epochs and tf.math.is_nan(norme_grad)==False):
         if(epoch==0):
             with tf.GradientTape() as tape:
                 prediction = model(x, training=True)
@@ -132,7 +130,7 @@ x,y, eps, max_epochs, lr=0.1, f1=2, f2=10000, lambd=0.5, beta_1=0.9, typef="floa
                 cost = loss_fn(y, prediction, sample_weight=sample_weight)
             v_norm2 = tf.linalg.global_norm(optimizer.v)**2
             V=cost+0.5*v_norm2; V_dot=(1-beta_1)*v_norm2
-            condition = (V-V_prec>-lambd*V_dot)
+            condition = (V-V_prec>-lambd*V_dot and lr>lr_min)
             if(condition):
                 lr/=f1; optimizer.learning_rate=lr
                 for w,val in zip(model.trainable_weights, weight_n):
@@ -141,11 +139,12 @@ x,y, eps, max_epochs, lr=0.1, f1=2, f2=10000, lambd=0.5, beta_1=0.9, typef="floa
                     var.assign(val)
             iterLoop+=1
 
-        if(lr<lr_min and lambd!=0):
-            active_security=True
-            break
-        if(lr<lr_min and lambd==0):
-            break
+        if(lr<lr_min):
+            if(lambd!=0):
+                active_security=True
+                lambd=0
+            else:
+                break
 
         lr*=f2
 
@@ -154,23 +153,21 @@ x,y, eps, max_epochs, lr=0.1, f1=2, f2=10000, lambd=0.5, beta_1=0.9, typef="floa
 
         epoch+=1    
 
-    if(active_security==True):
-        model,epoch_security, norme_grad,cost,_,_ = LC_Mom(model,loss_fn,x,y,eps,max_epochs-epoch,0.1,f1,f2,0,beta_1,typef)
     end_time = time.time()
 
-    return model, epoch+epoch_security, norme_grad, cost, end_time-start_time,active_security
+    return model, epoch, norme_grad, cost, end_time-start_time,active_security
 
 def LCD_Mom(model, loss_fn,
-x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, beta_1=0.9, typef="float32", sample_weight=None):
+x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, beta_1=0.9, typef=tf.float32, sample_weight=None):
 
     optimizer = CustomMomentum(lr,beta_1)
     optimizer.build(model.trainable_weights)
-    norme_grad=1000; epoch=0; active_security=False; epoch_security=0
-    lr_min=1e-9
+    norme_grad=tf.constant(1000,dtype=typef); epoch=0; active_security=False
+    lr_min=tnp.finfo(typef).eps
     nbLoops=int(np.log10(f2)/np.log10(f1))
 
     start_time = time.time()
-    while(norme_grad>eps and epoch<max_epochs):
+    while(norme_grad>eps and epoch<max_epochs and tf.math.is_nan(norme_grad)==False):
         if(epoch==0):
             with tf.GradientTape() as tape:
                 prediction = model(x, training=True)
@@ -196,7 +193,7 @@ x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, beta_1=0.9, typef="flo
                 cost = loss_fn(y, prediction, sample_weight=sample_weight)
             v_norm2 = tf.linalg.global_norm(optimizer.v)**2
             V=cost+0.5*v_norm2; V_dot=(1-beta_1)*v_norm2
-            condition = (V-V_prec>-lambd*V_dot)
+            condition = (V-V_prec>-lambd*V_dot and lr>lr_min)
             if(condition):
                 lr/=f1; optimizer.learning_rate=lr
                 for w,val in zip(model.trainable_weights, weight_n):
@@ -242,11 +239,12 @@ x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, beta_1=0.9, typef="flo
                         V=cost+0.5*v_norm2
                 iterLoop+=1
 
-        if(lr<lr_min and lambd!=0):
-            active_security=True
-            break
-        if(lr<lr_min and lambd==0):
-            break
+        if(lr<lr_min):
+            if(lambd!=0):
+                active_security=True
+                lambd=0
+            else:
+                break
 
         lr*=f2
 
@@ -255,22 +253,20 @@ x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, beta_1=0.9, typef="flo
 
         epoch+=1    
 
-    if(active_security==True):
-        model,epoch_security, norme_grad,cost,_,_ = LCD_Mom(model,loss_fn,x,y,eps,max_epochs-epoch,0.1,f1,f2,0,beta_1,typef)
     end_time = time.time()
 
-    return model, epoch+epoch_security, norme_grad, cost, end_time-start_time,active_security
+    return model, epoch, norme_grad, cost, end_time-start_time,active_security
 
 def LC_RMS(model, loss_fn,
-x,y, eps, max_epochs, lr=0.1, f1=2, f2=10000, lambd=0.5, beta_2=0.999, eps_a=1e-10, typef="float32", sample_weight=None):
+x,y, eps, max_epochs, lr=0.1, f1=2, f2=10000, lambd=0.5, beta_2=0.999, eps_a=1e-10, typef=tf.float32, sample_weight=None):
 
     optimizer = CustomRMSProp(lr,beta_2,eps_a)
     optimizer.build(model.trainable_weights)
-    norme_grad=1000; epoch=0; active_security=False; epoch_security=0
-    lr_min=1e-9
+    norme_grad=tf.constant(1000,dtype=typef); epoch=0; active_security=False
+    lr_min=tnp.finfo(typef).eps
 
     start_time = time.time()
-    while(norme_grad>eps and epoch<max_epochs):
+    while(norme_grad>eps and epoch<max_epochs and tf.math.is_nan(norme_grad)==False):
         if(epoch==0):
             with tf.GradientTape() as tape:
                 prediction = model(x, training=True)
@@ -296,7 +292,7 @@ x,y, eps, max_epochs, lr=0.1, f1=2, f2=10000, lambd=0.5, beta_2=0.999, eps_a=1e-
             V_dot = 0
             for i, grad in enumerate(grads):
                 V_dot+=tf.norm(grad/tf.pow(eps_a+optimizer.s[i],0.25))**2
-            condition = (cost-cost_prec>-lambd*lr*V_dot)
+            condition = (cost-cost_prec>-lambd*lr*V_dot and lr>lr_min)
             if(condition):
                 lr/=f1; optimizer.learning_rate=lr
                 for w,val in zip(model.trainable_weights, weight_n):
@@ -305,11 +301,12 @@ x,y, eps, max_epochs, lr=0.1, f1=2, f2=10000, lambd=0.5, beta_2=0.999, eps_a=1e-
                     var.assign(val)
             iterLoop+=1
 
-        if(lr<lr_min and lambd!=0):
-            active_security=True
-            break
-        if(lr<lr_min and lambd==0):
-            break
+        if(lr<lr_min):
+            if(lambd!=0):
+                active_security=True
+                lambd=0
+            else:
+                break
 
         lr*=f2
 
@@ -318,23 +315,21 @@ x,y, eps, max_epochs, lr=0.1, f1=2, f2=10000, lambd=0.5, beta_2=0.999, eps_a=1e-
 
         epoch+=1    
 
-    if(active_security==True):
-        model,epoch_security, norme_grad,cost,_,_ = LC_RMS(model,loss_fn,x,y,eps,max_epochs-epoch,0.1,f1,f2,0,beta_2,eps_a,typef)
     end_time = time.time()
 
-    return model, epoch+epoch_security, norme_grad, cost, end_time-start_time,active_security
+    return model, epoch, norme_grad, cost, end_time-start_time,active_security
 
 def LCD_RMS(model, loss_fn,
-x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, beta_2=0.999, eps_a=1e-10, typef="float32", sample_weight=None):
+x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, beta_2=0.999, eps_a=1e-10, typef=tf.float32, sample_weight=None):
 
     optimizer = CustomRMSProp(lr,beta_2,eps_a)
     optimizer.build(model.trainable_weights)
-    norme_grad=1000; epoch=0; active_security=False; epoch_security=0
-    lr_min=1e-9
+    norme_grad=tf.constant(1000,dtype=typef); epoch=0; active_security=False
+    lr_min=tnp.finfo(typef).eps
     nbLoops=int(np.log10(f2)/np.log10(f1))
 
     start_time = time.time()
-    while(norme_grad>eps and epoch<max_epochs):
+    while(norme_grad>eps and epoch<max_epochs and tf.math.is_nan(norme_grad)==False):
         if(epoch==0):
             with tf.GradientTape() as tape:
                 prediction = model(x, training=True)
@@ -360,7 +355,7 @@ x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, beta_2=0.999, eps_a=1e
             V_dot = 0
             for i, grad in enumerate(grads):
                 V_dot+=tf.norm(grad/tf.pow(eps_a+optimizer.s[i],0.25))**2
-            condition = (cost-cost_prec>-lambd*lr*V_dot)
+            condition = (cost-cost_prec>-lambd*lr*V_dot and lr>lr_min)
             if(condition):
                 lr/=f1; optimizer.learning_rate=lr
                 for w,val in zip(model.trainable_weights, weight_n):
@@ -405,11 +400,12 @@ x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, beta_2=0.999, eps_a=1e
                             cost = loss_fn(y, prediction, sample_weight=sample_weight)
                 iterLoop+=1
 
-        if(lr<lr_min and lambd!=0):
-            active_security=True
-            break
-        if(lr<lr_min and lambd==0):
-            break
+        if(lr<lr_min):
+            if(lambd!=0):
+                active_security=True
+                lambd=0
+            else:
+                break
 
         lr*=f2
 
@@ -418,21 +414,20 @@ x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, beta_2=0.999, eps_a=1e
 
         epoch+=1    
 
-    if(active_security==True):
-        model,epoch_security, norme_grad,cost,_,_ = LCD_RMS(model,loss_fn,x,y,eps,max_epochs-epoch,0.1,f1,f2,0,beta_2,eps_a,typef)
     end_time = time.time()
 
-    return model, epoch+epoch_security, norme_grad, cost, end_time-start_time,active_security
+    return model, epoch, norme_grad, cost, end_time-start_time,active_security
 
-def LC_NGD(model, loss_fn,
-x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, typef="float32", sample_weight=None):
+def LCD_NG(model, loss_fn,
+x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, typef=tf.float32, sample_weight=None):
 
     optimizer = optimizers.SGD(lr)
-    norme_grad=1000; epoch=0; active_security=False; epoch_security=0
-    lr_min=1e-9
+    norme_grad=tf.constant(1000,dtype=typef); epoch=0; active_security=False
+    lr_min=tnp.finfo(typef).eps
+    nbLoops=int(np.log10(f2)/np.log10(f1))
 
     start_time = time.time()
-    while(norme_grad>eps and epoch<max_epochs):
+    while(norme_grad>eps and epoch<max_epochs and tf.math.is_nan(norme_grad)==False):
 
         if(epoch==0):
             with tf.GradientTape() as tape:
@@ -448,13 +443,14 @@ x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, typef="float32", sampl
         cost_prec = cost
         weight_n = copy.deepcopy(model.get_weights())
         
-        lr, cost, grads, iterLoop = search_normalized_dichotomy_full(model, x, y, optimizer, loss_fn, sample_weight, grads, weight_n, cost_prec, lambd, norme_grad, f1, lr, nbLoops)
+        lr, cost, grads, _ = search_normalized_dichotomy_full(model, x, y, optimizer, loss_fn, sample_weight, grads, weight_n, cost_prec, lambd, norme_grad, f1, lr, lr_min, nbLoops)
 
-        if(lr<lr_min and lambd!=0):
-            active_security=True
-            break
-        if(lr<lr_min and lambd==0):
-            break
+        if(lr<lr_min):
+            if(lambd!=0):
+                active_security=True
+                lambd=0
+            else:
+                break
 
         lr*=f2
 
@@ -462,11 +458,9 @@ x,y, eps, max_epochs, lr=0.1, f1=30, f2=10000, lambd=0.5, typef="float32", sampl
 
         epoch+=1    
         
-    if(active_security==True):
-        model,epoch_security, norme_grad,cost,_,_ = LC_NGD(model,loss_fn,x,y,eps,max_epochs-epoch,0.1,f1,f2,0,typef)
     end_time = time.time()
 
-    return model, epoch+epoch_security, norme_grad, cost, end_time-start_time, active_security
+    return model, epoch, norme_grad, cost, end_time-start_time, active_security
 
 def ER(model,model_inter,loss_fn,
 x,y, eps, max_epochs, lr=0.1, seuil=0.01, sample_weight=None):
