@@ -2,7 +2,30 @@ from cmath import isnan
 from keras import optimizers
 import tensorflow as tf
 import time
-import numpy as np
+
+def AdamW(model,loss_fn,
+x,y, eps, max_epochs, lr=0.001, weight_decay=0.004, beta_1=0.9, beta_2=0.999,epsilon=1e-07,amsgrad=False,sample_weight=None):
+
+    optimizer = optimizers.AdamW(learning_rate=lr, weight_decay=weight_decay, beta_1=beta_1,beta_2=beta_2,epsilon=epsilon,amsgrad=amsgrad)
+    norme_grad=1000; epoch=0; cost=1000
+    start_time = time.time()
+    while(norme_grad>eps and epoch<max_epochs):
+
+        with tf.GradientTape() as tape:
+            prediction = model(x, training=True)
+            cost = loss_fn(y, prediction, sample_weight=sample_weight)
+
+        grads = tape.gradient(cost, model.trainable_weights)
+        norme_grad = tf.linalg.global_norm(grads)
+        if(norme_grad<eps):
+            break
+        optimizer.apply_gradients(zip(grads, model.trainable_weights))
+
+        epoch+=1
+
+    end_time = time.time()
+
+    return model, epoch, norme_grad, cost, end_time-start_time,False
 
 def Adam(model,loss_fn,
 x,y, eps, max_epochs, lr=0.001, beta_1=0.9, beta_2=0.999,epsilon=1e-07,amsgrad=False,sample_weight=None):
