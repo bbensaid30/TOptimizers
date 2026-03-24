@@ -3,6 +3,13 @@ import tensorflow as tf
 from scipy.ndimage import gaussian_filter1d
 from scipy.signal.windows import triang
 
+import os, psutil
+
+def get_memory_usage():
+    # Retourne la mémoire utilisée par le processus actuel en MegaOctets
+    process = psutil.Process(os.getpid())
+    return process.memory_info().rss / (1024 ** 2)
+
 def get_lds_kernel_window(kernel, ks, sigma):
     assert kernel in ['gaussian', 'triang', 'laplace']
     half_ks = (ks - 1) // 2
