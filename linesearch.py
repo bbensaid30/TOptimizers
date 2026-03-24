@@ -2,7 +2,7 @@ import numpy as np
 import tensorflow as tf
 
 #modify the weights and the gradient
-def search_full(model, x, y, optimizer, loss_fn, sample_weight, grads, weight_n, cost_prec, lambd, V_dot, lr, f1):
+def search_full(model, x, y, optimizer, loss_fn, sample_weight, grads, weight_n, cost_prec, lambd, V_dot, lr, f1, lr_min):
     optimizer.learning_rate=lr
     condition=True; iterLoop=0
     while(condition):
@@ -10,7 +10,7 @@ def search_full(model, x, y, optimizer, loss_fn, sample_weight, grads, weight_n,
         with tf.GradientTape() as tape:
             prediction = model(x, training=True)
             cost = loss_fn(y, prediction, sample_weight=sample_weight)
-        condition = (cost-cost_prec>-lambd*lr*V_dot)
+        condition = (cost-cost_prec>-lambd*lr*V_dot and lr>lr_min)
         if(condition):
             lr/=f1; optimizer.learning_rate=lr
             for w,val in zip(model.trainable_weights, weight_n):
@@ -19,7 +19,7 @@ def search_full(model, x, y, optimizer, loss_fn, sample_weight, grads, weight_n,
     grads = tape.gradient(cost, model.trainable_weights)
     return lr, cost, grads, iterLoop
 
-def search_dichotomy_full(model, x, y, optimizer, loss_fn, sample_weight, grads, weight_n, cost_prec, lambd, V_dot, f1, lr, nbLoops=3):
+def search_dichotomy_full(model, x, y, optimizer, loss_fn, sample_weight, grads, weight_n, cost_prec, lambd, V_dot, f1, lr, lr_min, nbLoops=3):
     optimizer.learning_rate=lr
     condition=True; iterLoop=0
     while(condition):
@@ -27,7 +27,7 @@ def search_dichotomy_full(model, x, y, optimizer, loss_fn, sample_weight, grads,
         with tf.GradientTape() as tape:
             prediction = model(x, training=True)
             cost = loss_fn(y, prediction, sample_weight=sample_weight)
-        condition = cost-cost_prec>-lambd*lr*V_dot
+        condition = cost-cost_prec>-lambd*lr*V_dot and lr>lr_min
         if(condition):
             lr/=f1; optimizer.learning_rate=lr
             for w,val in zip(model.trainable_weights, weight_n):
@@ -119,7 +119,7 @@ def search_normalized_full(model, x, y, optimizer, loss_fn, sample_weight, grads
     grads = tape.gradient(cost, model.trainable_weights)
     return lr, cost, grads, iterLoop
 
-def search_normalized_dichotomy_full(model, x, y, optimizer, loss_fn, sample_weight, grads, weight_n, cost_prec, lambd, V_dot, f1, lr, nbLoops=3):
+def search_normalized_dichotomy_full(model, x, y, optimizer, loss_fn, sample_weight, grads, weight_n, cost_prec, lambd, V_dot, f1, lr, lr_min, nbLoops=3):
     optimizer.learning_rate=lr/V_dot
     condition=True; iterLoop=0
     while(condition):
@@ -127,7 +127,7 @@ def search_normalized_dichotomy_full(model, x, y, optimizer, loss_fn, sample_wei
         with tf.GradientTape() as tape:
             prediction = model(x, training=True)
             cost = loss_fn(y, prediction, sample_weight=sample_weight)
-        condition = cost-cost_prec>-lambd*lr*V_dot
+        condition = cost-cost_prec>-lambd*lr*V_dot and lr>lr_min
         if(condition):
             lr/=f1; optimizer.learning_rate=lr/V_dot
             model.set_weights(weight_n)
