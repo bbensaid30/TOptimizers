@@ -1,4 +1,6 @@
 from keras import losses, metrics
+from tensorflow.experimental import numpy as tnp
+import tensorflow as tf
 
 from data import MNIST
 from tirages_json import tirages_json
@@ -23,8 +25,8 @@ eps=10**(-4); max_epochs=20000
 #paramètres d'entrainement 
 lr=0.1
 seuil=0.01
-f1=30; f2=10000; lambd=0.5; rho=0.9; eps_egd=0.01
-beta_1=0.9; beta_2=0.999; epsilon=1e-10
+f1=30; f2=10000; lambd=0.5
+beta_1=0.9; beta_2=0.999; epsilon_a=0.01*tf.sqrt(tnp.finfo(tf.float32).eps)
 amsgrad=False
 
 tirageMin=0; nbTirages=50
@@ -34,7 +36,7 @@ folder="MNIST/"
 filename=folder+algo+".jsonl"
 
 studies = tirages_json(filename, tirageMin,nbTirages,name_model,nbNeurons,activations,loss,name_init,params_init,metrics,
-x_train,y_train,algo,eps,max_epochs,lr,seuil,f1,f2,rho,eps_egd,lambd,beta_1,beta_2,epsilon,amsgrad,"float32",sample_weight,
+x_train,y_train,algo,eps,max_epochs,lr,seuil,f1,f2,lambd,beta_1,beta_2,epsilon_a,amsgrad,"float32",sample_weight,
 "simple",x_test,y_test)
 
 

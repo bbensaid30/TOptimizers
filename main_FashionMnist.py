@@ -1,40 +1,74 @@
-from keras import losses, metrics
+from keras import losses
+from tensorflow.experimental import numpy as tnp
+import tensorflow as tf
+import argparse
 
 from data import FASHION_MNIST
 from tirages_json import tirages_json
 
-sample_weight=1
+from utils import get_memory_usage
 
-# Prepare the training dataset.
-x_train, y_train, x_test, y_test = FASHION_MNIST()
+def main():
+    # 1. Création du parseur
+    parser = argparse.ArgumentParser(description="LeNet Fashion Mnist avec parallélisation Joblib.")
 
-# architecture.
-name_model="lenet1_mnist"
-nbNeurons=[]
-activations=[]
-loss = losses.MeanSquaredError()
-#loss = losses.CategoricalCrossentropy()
-metrics = ["categorical_accuracy"]
-name_init="Bengio"
-params_init=[-1,1]
+    # 2. Ajout des arguments
+    # On peut définir des valeurs par défaut et des types
+    parser.add_argument(
+        "--n_jobs", 
+        type=int, 
+        default=1, 
+        help="Nombre de cœurs CPU à utiliser (par défaut: 1)"
+    )
 
-#paramètres d'arrêt
-eps=10**(-4); max_epochs=10000
-#paramètres d'entrainement 
-lr=0.1
-seuil=0.01
-f1=30; f2=10000; lambd=0.5; rho=0.9; eps_egd=0.01
-beta_1=0.9; beta_2=0.999; epsilon=1e-10
-amsgrad=False
+    # 3. Récupération des arguments
+    args = parser.parse_args()
 
-tirageMin=0; nbTirages=50
-algo="LCD_RMS"
+    # Accès aux variables via args.nom_de_l_argument
+    print(f"--- Configuration du Job ---")
+    print(f"CPUs alloués      : {args.n_jobs}")
+    print(f"----------------------------")
 
-folder="FASHION_MNIST/"
-filename=folder+algo+".jsonl"
+    sample_weight=1
 
-studies = tirages_json(filename, tirageMin,nbTirages,name_model,nbNeurons,activations,loss,name_init,params_init,metrics,
-x_train,y_train,algo,eps,max_epochs,lr,seuil,f1,f2,rho,eps_egd,lambd,beta_1,beta_2,epsilon,amsgrad,"float32",sample_weight,
-"simple",x_test,y_test)
+    # Prepare the training dataset.
+    x_train, y_train, x_test, y_test = FASHION_MNIST()
+
+    # architecture.
+    name_model="lenet1_mnist"
+    nbNeurons=[]
+    activations=[]
+    loss = losses.MeanSquaredError()
+    #loss = losses.CategoricalCrossentropy()
+    metrics = ["categorical_accuracy"]
+    name_init="Bengio"
+    params_init=[-1,1]
+
+    #paramètres d'arrêt
+    eps=10**(-4); max_epochs=10
+    #paramètres d'entrainement 
+    lr=0.1
+    weight_decay=0.01
+    f1=30; f2=10000; lambd=0.5
+    beta_1=0.9; beta_2=0.999; epsilon_a=0.01*tf.sqrt(tnp.finfo(tf.float32).eps)
+    amsgrad=False
+
+    tirageMin=0; nbTirages=1
+    algo="LCD_RMS"
+
+    folder="FASHION_MNIST/"
+    filename=folder+algo+".jsonl"
+
+    studies = tirages_json(args.n_jobs, filename, tirageMin,nbTirages,name_model,nbNeurons,activations,loss,name_init,params_init,metrics,
+    x_train,y_train,algo,eps,max_epochs,lr,weight_decay,f1,f2,lambd,beta_1,beta_2,epsilon_a,amsgrad,tf.float32,sample_weight,
+    "simple",x_test,y_test)
+    print(studies)
+
+if __name__ == "__main__":
+    start_mem = get_memory_usage()
+    main()
+    end_mem = get_memory_usage()
+    print(f"Consommation RAM : {end_mem:.2f} MB (Augmentation : {end_mem - start_mem:.2f} MB)")
 
 
+#3.5GB and 69s for 10 epochs on cpu
